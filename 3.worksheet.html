@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>แบบฝึกหัดสำรวจค่าไฟฟ้า</title>
+<style>
+/* ============================================================
+   BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --blue:      #1565C0;
+  --blue-dk:   #0D47A1;
+  --blue-lt:   #42A5F5;
+  --blue-pale: #E3F2FD;
+  --green:     #2E7D32;
+  --green-lt:  #66BB6A;
+  --green-pale:#E8F5E9;
+  --orange:    #F57C00;
+  --red:       #C62828;
+  --red-pale:  #FFEBEE;
+  --grey1:     #ECEFF1;
+  --grey2:     #CFD8DC;
+  --grey3:     #90A4AE;
+  --text:      #1A2027;
+  --text2:     #455A64;
+  --white:     #FFFFFF;
+  --r:         12px;
+  --shadow:    0 2px 12px rgba(0,0,0,.09);
+}
+html { font-size: 15px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: 'Segoe UI','Noto Sans Thai',Tahoma,sans-serif;
+  background: #EEF2F7; color: var(--text);
+  min-height: 100vh; padding: 0 0 40px;
+}
+
+/* ============================================================
+   PAGE
+   ============================================================ */
+.page { max-width: 980px; margin: 0 auto; background: white; }
+@media(min-width:640px){
+  .page { margin: 16px auto; border-radius: 20px;
+          box-shadow: 0 8px 40px rgba(0,0,0,.13); overflow: hidden; }
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.hd {
+  background: linear-gradient(135deg,#0D47A1 0%,#1565C0 55%,#00695C 100%);
+  padding: 18px 20px 16px; color: white;
+}
+.hd-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.hd-title h1 { font-size: 1.05rem; font-weight: 900; line-height: 1.35; }
+.hd-title .sub { font-size: .72rem; opacity: .82; margin-top: 4px; line-height: 1.5; }
+.hd-title .ref { font-size: .63rem; opacity: .65; margin-top: 3px; }
+
+/* Timer */
+.timer-wrap { flex-shrink: 0; text-align: center; }
+.timer {
+  font-size: 2rem; font-weight: 900;
+  font-family: 'Courier New', monospace;
+  color: #FFF176; letter-spacing: 2px; line-height: 1;
+  text-shadow: 0 0 16px rgba(255,241,118,.5);
+  transition: color .3s;
+}
+.timer.warn { color: #FF5252; animation: blink .55s ease infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+.timer-lbl  { font-size: .62rem; opacity: .75; margin-top: 2px; }
+.timer-bar  { width: 120px; height: 5px; background: rgba(255,255,255,.22); border-radius: 3px; overflow: hidden; margin: 5px auto 0; }
+.timer-fill { height: 100%; background: linear-gradient(90deg,#69F0AE,#FFF176); border-radius: 3px; transition: width 1s linear; }
+
+/* timesup */
+.timesup { display:none; background:linear-gradient(135deg,#B71C1C,#E53935); color:white;
+  padding:10px 16px; align-items:center; justify-content:space-between;
+  gap:8px; flex-wrap:wrap; font-size:.82rem; font-weight:700; }
+.timesup.show { display:flex; }
+.ts-btn { background:white; color:#C62828; border:none; border-radius:8px;
+  padding:6px 14px; font-weight:800; font-size:.8rem; cursor:pointer; }
+
+/* ============================================================
+   INSTRUCTION
+   ============================================================ */
+.inst { background:#E8F5E9; border-left:4px solid var(--green);
+  padding:12px 16px; font-size:.78rem; color:#1B5E20; line-height:1.7; }
+details.inst summary { cursor:pointer; font-weight:800; font-size:.8rem;
+  list-style:none; display:flex; justify-content:space-between; align-items:center; }
+details.inst summary::after { content:'▼'; font-size:.65rem; }
+details.inst[open] summary::after { content:'▲'; }
+details.inst ol { margin-top:8px; padding-left:18px; }
+details.inst li { margin-bottom:2px; }
+
+/* ============================================================
+   BODY
+   ============================================================ */
+.body { padding: 18px 16px; }
+
+/* META */
+.meta { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px; }
+@media(max-width:560px){ .meta { grid-template-columns:1fr; gap:10px; } }
+.mf label { display:block; font-size:.72rem; font-weight:700; color:var(--text2); margin-bottom:3px; }
+.mf input { width:100%; border:2px solid var(--grey2); border-radius:8px;
+  padding:10px 12px; font-size:.9rem; outline:none; transition:border-color .2s;
+  -webkit-appearance:none; }
+.mf input:focus { border-color:var(--blue); }
+
+/* ============================================================
+   TABLE  (Desktop)
+   ============================================================ */
+.tbl-wrap { overflow-x:auto; margin-bottom:12px; -webkit-overflow-scrolling:touch; }
+table.ws { width:100%; border-collapse:collapse; min-width:680px; font-size:.82rem; }
+
+table.ws thead tr { background:linear-gradient(90deg,var(--blue-dk),var(--blue)); }
+table.ws thead th { padding:10px 8px; font-size:.72rem; font-weight:700; color:white;
+  text-align:center; white-space:nowrap; }
+table.ws thead th:nth-child(2) { text-align:left; }
+
+table.ws tbody tr { border-bottom:1px solid var(--grey1); transition:background .12s; }
+table.ws tbody tr:hover { background:#F5FFFE; }
+table.ws tbody tr:nth-child(even) { background:#FAFBFC; }
+table.ws tbody tr:nth-child(even):hover { background:#EEF9F8; }
+table.ws td { padding:8px 6px; text-align:center; vertical-align:middle; }
+table.ws td:nth-child(2) { text-align:left; }
+
+/* tfoot */
+table.ws tfoot td { padding:10px 8px; font-weight:800; font-size:.82rem;
+  background:linear-gradient(90deg,#E8F5E9,#E3F2FD); border-top:2px solid var(--green-lt); }
+
+/* ============================================================
+   INPUT INSIDE TABLE
+   ============================================================ */
+select.sel { width:100%; min-width:145px; border:1.5px solid var(--grey2); border-radius:7px;
+  padding:7px 8px; font-size:.8rem; outline:none; cursor:pointer; background:white;
+  transition:border-color .2s; }
+select.sel:focus { border-color:var(--blue); }
+
+input.ni { width:68px; border:1.5px solid var(--grey2); border-radius:7px;
+  padding:7px 6px; font-size:.82rem; text-align:center; outline:none;
+  transition:border-color .2s; -webkit-appearance:none; }
+input.ni:focus { border-color:var(--blue); }
+input.ni.watt { color:var(--red); font-weight:700; width:76px; }
+
+/* computed */
+.cv { font-weight:700; color:var(--blue); background:var(--blue-pale);
+  border-radius:6px; padding:5px 7px; display:inline-block; min-width:58px;
+  white-space:nowrap; font-size:.8rem; }
+.cv.cost { color:var(--green); background:var(--green-pale); }
+.cv.co2  { color:#6A1B9A; background:#F3E5F5; }
+
+/* delete */
+.del-btn { background:var(--red-pale); border:none; border-radius:50%;
+  width:26px; height:26px; color:var(--red); font-size:.8rem;
+  cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+  transition:transform .15s, background .15s; }
+.del-btn:active { background:#FFCDD2; transform:scale(1.15); }
+
+/* ============================================================
+   RESPONSIVE TABLE  →  STACKED on mobile (< 640px)
+   ============================================================ */
+@media(max-width:639px){
+  .tbl-wrap { overflow: visible; }
+
+  /* block ทุก element ของ table ก่อน และยกเลิก min-width */
+  table.ws { min-width: unset; width: 100%; }
+  table.ws, table.ws thead, table.ws tbody,
+  table.ws tfoot, table.ws th, table.ws td, table.ws tr { display:block; }
+
+  /* ซ่อน header */
+  table.ws thead tr { display:none; }
+
+  /* แต่ละแถว = card  — grid 5 คอลัมน์ */
+  table.ws tbody tr {
+    background: white !important;
+    border: 2px solid var(--grey1);
+    border-radius: var(--r);
+    margin-bottom: 10px;
+    padding: 0;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    /* grid: [num(40px)] [w(1fr)] [qty(1fr)] [h(1fr)] [del(36px)] */
+    display: grid;
+    grid-template-columns: 40px 1fr 1fr 1fr 36px;
+    grid-template-rows: auto auto auto;
+  }
+  table.ws tbody tr:hover { background:white !important; }
+  table.ws tbody tr.has-data { border-color: var(--blue-lt); }
+
+  /* ── แถวที่ 1 : เลขที่ | dropdown (span 3) | delete ── */
+
+  /* เลขที่ */
+  table.ws td:nth-child(1) {
+    grid-column: 1; grid-row: 1 / 3;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--blue);
+    color: white; font-size: .8rem; font-weight: 800;
+    border-radius: var(--r) 0 0 0;
+    padding: 0;
+  }
+
+  /* dropdown */
+  table.ws td:nth-child(2) {
+    grid-column: 2 / 5; grid-row: 1;
+    display: block;
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--grey1);
+  }
+  table.ws td:nth-child(2) select.sel { width:100%; min-width:unset; }
+
+  /* delete */
+  table.ws td:nth-child(9) {
+    grid-column: 5; grid-row: 1 / 3;
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px;
+    background: #FAFBFC;
+    border-left: 1px solid var(--grey1);
+    border-radius: 0 var(--r) 0 0;
+  }
+
+  /* ── แถวที่ 2 : กำลังไฟ | จำนวน | ชั่วโมง ── */
+  table.ws td:nth-child(3),
+  table.ws td:nth-child(4),
+  table.ws td:nth-child(5) {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 6px 4px 8px;
+    border-bottom: 1px solid var(--grey1);
+  }
+  table.ws td:nth-child(3) { grid-column: 2; grid-row: 2; border-right: 1px solid var(--grey1); }
+  table.ws td:nth-child(4) { grid-column: 3; grid-row: 2; border-right: 1px solid var(--grey1); }
+  table.ws td:nth-child(5) { grid-column: 4; grid-row: 2; }
+
+  /* labels */
+  table.ws td:nth-child(3)::before { content:'⚡ W'; font-size:.6rem; font-weight:700; color:var(--red); margin-bottom:3px; }
+  table.ws td:nth-child(4)::before { content:'🔢 จำนวน'; font-size:.6rem; font-weight:700; color:var(--text2); margin-bottom:3px; }
+  table.ws td:nth-child(5)::before { content:'⏱ ชม./วัน'; font-size:.6rem; font-weight:700; color:var(--text2); margin-bottom:3px; }
+
+  /* input ขยายเต็มช่อง */
+  table.ws td:nth-child(3) input,
+  table.ws td:nth-child(4) input,
+  table.ws td:nth-child(5) input { width:100%; min-width:0; max-width:100%; font-size:.8rem; }
+  input.ni, input.ni.watt { width:100%; min-width:0; }
+
+  /* ── แถวที่ 3 : หน่วย | ค่าไฟ | CO₂ — span ข้าม num+del ── */
+  table.ws td:nth-child(6),
+  table.ws td:nth-child(7),
+  table.ws td:nth-child(8) {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 7px 4px;
+    background: #FAFBFC;
+  }
+  table.ws td:nth-child(6) { grid-column: 1 / 3; grid-row: 3; border-right: 1px solid var(--grey2); }
+  table.ws td:nth-child(7) { grid-column: 3;     grid-row: 3; border-right: 1px solid var(--grey2); }
+  table.ws td:nth-child(8) { grid-column: 4 / 6; grid-row: 3; }
+
+  table.ws td:nth-child(6)::before { content:'หน่วย/เดือน'; font-size:.6rem; font-weight:700; color:var(--blue); margin-bottom:3px; }
+  table.ws td:nth-child(7)::before { content:'ค่าไฟ/เดือน'; font-size:.6rem; font-weight:700; color:var(--green); margin-bottom:3px; }
+  table.ws td:nth-child(8)::before { content:'CO₂/เดือน'; font-size:.6rem; font-weight:700; color:#7B1FA2; margin-bottom:3px; }
+
+  table.ws td:nth-child(6) .cv,
+  table.ws td:nth-child(7) .cv,
+  table.ws td:nth-child(8) .cv { min-width:unset; width:100%; text-align:center; font-size:.75rem; }
+
+  /* ── TFOOT ── */
+  table.ws tfoot tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-radius: var(--r);
+    border: 2px solid var(--green-lt);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  table.ws tfoot td { padding: 10px 6px; text-align:center; display:none; }
+  table.ws tfoot td:nth-child(6),
+  table.ws tfoot td:nth-child(7),
+  table.ws tfoot td:nth-child(8) { display:block; }
+}
+
+/* ============================================================
+   FOOTER LABEL on mobile
+   ============================================================ */
+@media(max-width:639px){
+  .foot-kwh-lbl::before  { content:'หน่วยรวม '; font-size:.65rem; color:var(--blue); font-weight:700; display:block; }
+  .foot-cost-lbl::before { content:'ค่าไฟรวม '; font-size:.65rem; color:var(--green); font-weight:700; display:block; }
+  .foot-co2-lbl::before  { content:'CO₂ รวม '; font-size:.65rem; color:#7B1FA2; font-weight:700; display:block; }
+}
+
+/* ============================================================
+   ADD BUTTON
+   ============================================================ */
+.add-btn { width:100%; background:var(--blue-pale); border:2px dashed var(--blue-lt);
+  border-radius:var(--r); padding:12px; font-size:.88rem; font-weight:700;
+  color:var(--blue); cursor:pointer; margin-bottom:18px;
+  transition:background .2s, border-color .2s; }
+.add-btn:active { background:#BBDEFB; }
+
+/* ============================================================
+   SUMMARY
+   ============================================================ */
+.summary { display:none; border:2px solid var(--green-lt); border-radius:var(--r);
+  overflow:hidden; margin-bottom:18px; animation:fadeUp .4s ease; }
+.summary.show { display:block; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.sum-head { background:linear-gradient(90deg,var(--blue-dk),var(--blue));
+  color:white; padding:12px 16px; font-size:.9rem; font-weight:800; }
+.sum-body { padding:14px; background:linear-gradient(135deg,#F1F8E9,#E3F2FD); }
+
+.sum-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+@media(max-width:440px){ .sum-grid { grid-template-columns:1fr 1fr; } }
+.sc { background:white; border-radius:var(--r); padding:11px 8px; text-align:center; box-shadow:var(--shadow); }
+.sc .sl { font-size:.62rem; font-weight:700; color:var(--text2); }
+.sc .sv { font-size:1.2rem; font-weight:900; margin:3px 0; }
+.sc .su { font-size:.6rem; color:var(--grey3); }
+.sc.kwh  .sv { color:var(--blue); }
+.sc.cost .sv { color:var(--orange); }
+.sc.yr   .sv { color:#E65100; }
+.sc.co2  .sv { color:var(--green); }
+.sc.cnt  .sv { color:#7B1FA2; }
+.sc.top  .sv { color:var(--red); font-size:.82rem; line-height:1.3; }
+
+/* breakdown */
+.bk-title { font-size:.75rem; font-weight:800; color:var(--blue-dk); margin-bottom:8px; }
+.bk-list  { list-style:none; margin-bottom:14px; }
+.bk-item  { display:flex; align-items:center; gap:6px; padding:7px 0;
+  font-size:.78rem; border-bottom:1px solid var(--grey1); }
+.bk-item:last-child { border:none; }
+.bk-rank  { font-weight:700; color:var(--grey3); min-width:16px; text-align:right; flex-shrink:0; }
+.bk-info  { flex:1; min-width:0; }
+.bk-name  { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bk-meta  { font-size:.65rem; color:var(--grey3); }
+.bk-bar   { flex:0 0 60px; height:6px; background:var(--grey1); border-radius:4px; overflow:hidden; }
+@media(min-width:480px){ .bk-bar { flex:0 0 90px; } }
+.bk-fill  { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--blue-lt),var(--green-lt)); }
+.bk-cost  { font-weight:800; color:var(--orange); min-width:50px; text-align:right; flex-shrink:0; }
+.advice   { background:#E8F5E9; border-radius:8px; padding:12px 14px;
+  font-size:.78rem; color:#1B5E20; line-height:1.75; }
+
+/* ============================================================
+   ACTION BUTTONS
+   ============================================================ */
+.actions { display:flex; gap:8px; flex-wrap:wrap; }
+.actions .btn { flex:1; min-width:80px; }
+.btn { border:none; border-radius:var(--r); padding:13px 10px;
+  font-size:.85rem; font-weight:700; cursor:pointer; text-align:center;
+  transition:transform .15s, filter .15s; }
+.btn:active { transform:scale(.96); }
+.btn-calc  { background:linear-gradient(135deg,var(--blue),var(--green));
+  color:white; box-shadow:0 4px 14px rgba(21,101,192,.28); }
+.btn-reset { background:var(--grey1); color:var(--text2); border:2px solid var(--grey2); }
+.btn-print { background:var(--green-pale); color:var(--green); border:2px solid var(--green-lt); }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast { position:fixed; bottom:20px; left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:rgba(13,71,161,.93); color:white;
+  padding:10px 22px; border-radius:26px; font-size:.82rem; font-weight:600;
+  z-index:999; box-shadow:0 6px 24px rgba(0,0,0,.2);
+  transition:transform .35s cubic-bezier(.175,.885,.32,1.275);
+  pointer-events:none; white-space:nowrap; max-width:90vw; text-align:center; }
+.toast.show { transform:translateX(-50%) translateY(0); }
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print {
+  body { background:white; }
+  .page { box-shadow:none; border-radius:0; }
+  .hd { background:#1565C0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .timer-wrap, .timesup, .add-btn, .actions, .toast, .del-btn { display:none !important; }
+  .summary { display:block !important; }
+  /* คืน table layout สำหรับ print */
+  table.ws, table.ws thead, table.ws tbody, table.ws tfoot,
+  table.ws th, table.ws td, table.ws tr { display:table-row !important; }
+  table.ws thead tr { display:table-row !important; }
+  table.ws thead th { display:table-cell !important; }
+  table.ws tbody td, table.ws tfoot td { display:table-cell !important; }
+  table.ws { display:table !important; }
+  table.ws thead { display:table-header-group !important; }
+  table.ws tbody { display:table-row-group !important; }
+  table.ws tfoot  { display:table-footer-group !important; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="hd">
+    <div class="hd-row">
+      <div class="hd-title">
+        <h1>📋 แบบฝึกหัดสำรวจเครื่องใช้ไฟฟ้าในบ้าน<br>และประมาณการค่าไฟฟ้าต่อเดือน</h1>
+        <p class="sub">สำรวจอุปกรณ์ที่ใช้งานจริง แล้วคำนวณค่าไฟที่ต้องเสียต่อเดือน</p>
+        <p class="ref">📌 ISO 50001:2018 &nbsp;|&nbsp; 4.50 บาท/หน่วย &nbsp;|&nbsp; EF = 0.4999 kgCO₂/kWh</p>
+      </div>
+      <div class="timer-wrap">
+        <div class="timer" id="timer">10:00</div>
+        <div class="timer-lbl">⏱ เวลาที่เหลือ</div>
+        <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMESUP -->
+  <div class="timesup" id="timesup">
+    <span>⏰ หมดเวลา! กดปุ่มคำนวณค่าไฟ</span>
+    <button class="ts-btn" onclick="calculate()">คำนวณเลย →</button>
+  </div>
+
+  <!-- INSTRUCTION -->
+  <div class="inst">
+    <details class="inst">
+      <summary>📖 วิธีทำแบบฝึกหัด (กดขยาย)</summary>
+      <ol>
+        <li>กรอก <strong>ชื่อ-สกุล</strong>, <strong>ห้อง/บ้านเลขที่</strong> และ <strong>วันที่</strong></li>
+        <li>เลือก <strong>เครื่องใช้ไฟฟ้า</strong> จาก dropdown — วัตต์และชั่วโมงจะเติมให้อัตโนมัติ</li>
+        <li>ระบุ <strong>จำนวนเครื่อง</strong> และ <strong>ชั่วโมงใช้งานต่อวัน</strong> ตามความเป็นจริง</li>
+        <li>ปรับ <strong>กำลังไฟ (W)</strong> ได้หากรุ่นที่ใช้ต่างจากค่าเริ่มต้น</li>
+        <li>ระบบคำนวณ <strong>หน่วย / ค่าไฟ / CO₂ ต่อเดือน</strong> ให้อัตโนมัติ</li>
+        <li>กด <strong>"🧮 คำนวณค่าไฟ"</strong> เพื่อดูสรุปผลและคำแนะนำประหยัดพลังงาน</li>
+      </ol>
+    </details>
+  </div>
+
+  <div class="body">
+
+    <!-- META -->
+    <div class="meta">
+      <div class="mf">
+        <label>👤 ชื่อ-สกุลผู้บันทึก</label>
+        <input type="text" id="f-name" placeholder="ชื่อ-สกุล">
+      </div>
+      <div class="mf">
+        <label>🏠 ห้อง / บ้านเลขที่</label>
+        <input type="text" id="f-room" placeholder="เช่น ห้องนั่งเล่น">
+      </div>
+      <div class="mf">
+        <label>📅 วันที่สำรวจ</label>
+        <input type="date" id="f-date">
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="tbl-wrap">
+      <table class="ws" id="ws-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>เครื่องใช้ไฟฟ้า</th>
+            <th>กำลังไฟ (W)</th>
+            <th>จำนวน<br>(เครื่อง)</th>
+            <th>ใช้งาน<br>(ชม./วัน)</th>
+            <th>หน่วย<br>/เดือน</th>
+            <th>ค่าไฟ/เดือน<br>(บาท)</th>
+            <th>CO₂/เดือน<br>(kgCO₂)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ws-body"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" style="text-align:right;color:var(--blue-dk);font-size:.8rem">
+              รวมทั้งหมด →
+            </td>
+            <td class="foot-kwh-lbl"><span class="cv"  id="foot-kwh">–</span></td>
+            <td class="foot-cost-lbl"><span class="cv cost" id="foot-cost">–</span></td>
+            <td class="foot-co2-lbl"><span class="cv co2"  id="foot-co2">–</span></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- ADD -->
+    <button class="add-btn" onclick="addRow()">➕ เพิ่มอุปกรณ์</button>
+
+    <!-- SUMMARY -->
+    <div class="summary" id="summary">
+      <div class="sum-head">📊 สรุปผลการคำนวณค่าไฟฟ้าประจำเดือน</div>
+      <div class="sum-body">
+        <div class="sum-grid">
+          <div class="sc kwh"><div class="sl">พลังงานที่ใช้</div>
+            <div class="sv" id="s-kwh">–</div><div class="su">หน่วย/เดือน</div></div>
+          <div class="sc cost"><div class="sl">ค่าไฟประมาณ</div>
+            <div class="sv" id="s-cost">–</div><div class="su">บาท/เดือน</div></div>
+          <div class="sc yr"><div class="sl">ค่าไฟต่อปี</div>
+            <div class="sv" id="s-yr">–</div><div class="su">บาท/ปี</div></div>
+          <div class="sc co2"><div class="sl">Carbon Emission</div>
+            <div class="sv" id="s-co2">–</div><div class="su">kgCO₂/เดือน</div></div>
+          <div class="sc cnt"><div class="sl">จำนวนอุปกรณ์</div>
+            <div class="sv" id="s-cnt">–</div><div class="su">เครื่อง</div></div>
+          <div class="sc top"><div class="sl">กินไฟมากสุด</div>
+            <div class="sv" id="s-top">–</div><div class="su">ต่อเดือน</div></div>
+        </div>
+        <p class="bk-title">🔍 สัดส่วนค่าไฟแต่ละอุปกรณ์</p>
+        <ul class="bk-list" id="bk-list"></ul>
+        <div class="advice" id="advice"></div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+      <button class="btn btn-reset" onclick="resetAll()">🔄 เริ่มใหม่</button>
+      <button class="btn btn-print" onclick="window.print()">🖨️ พิมพ์</button>
+      <button class="btn btn-calc"  onclick="calculate()">🧮 คำนวณค่าไฟ</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONSTANTS & DATA
+   ============================================================ */
+const RATE    = 4.50;
+const EF      = 0.4999;
+const TOTAL_S = 600;
+
+const appliances = [
+  { id:'ac',          name:'❄️ เครื่องปรับอากาศ',       w:1200, h:8    },
+  { id:'fridge',      name:'🧊 ตู้เย็น',                w:150,  h:24   },
+  { id:'tv',          name:'📺 โทรทัศน์',               w:100,  h:5    },
+  { id:'washer',      name:'🫧 เครื่องซักผ้า',          w:500,  h:1    },
+  { id:'fan',         name:'🌀 พัดลม',                  w:55,   h:8    },
+  { id:'rice',        name:'🍚 หม้อหุงข้าว',            w:700,  h:1    },
+  { id:'microwave',   name:'📡 ไมโครเวฟ',               w:1300, h:0.5  },
+  { id:'heater',      name:'🚿 เครื่องทำน้ำอุ่น',       w:4500, h:0.25 },
+  { id:'iron',        name:'👔 เตารีด',                 w:1000, h:0.5  },
+  { id:'vacuum',      name:'🌪️ เครื่องดูดฝุ่น',        w:1000, h:0.5  },
+  { id:'dryer',       name:'💨 ไดร์เป่าผม',             w:1200, h:0.25 },
+  { id:'lamp',        name:'💡 โคมไฟ / หลอด LED',      w:10,   h:6    },
+  { id:'computer',    name:'🖥️ คอมพิวเตอร์ตั้งโต๊ะ',   w:300,  h:6    },
+  { id:'laptop',      name:'💻 โน้ตบุ๊ค',              w:65,   h:6    },
+  { id:'phone',       name:'📱 ชาร์จมือถือ',            w:18,   h:3    },
+  { id:'router',      name:'📶 เราเตอร์ Wi-Fi',         w:12,   h:24   },
+  { id:'waterheater', name:'🪣 เครื่องทำน้ำร้อน (ถัง)', w:3000, h:2    },
+  { id:'pump',        name:'💧 ปั๊มน้ำ',                w:370,  h:1    },
+  { id:'dishwasher',  name:'🍽️ เครื่องล้างจาน',        w:1800, h:0.5  },
+  { id:'custom',      name:'⚡ กำหนดเอง',               w:0,    h:0    },
+];
+
+const optHTML = appliances.map(a =>
+  `<option value="${a.id}" data-w="${a.w}" data-h="${a.h}">${a.name}</option>`
+).join('');
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let rowCount = 0;
+let timerSec = TOTAL_S;
+let timerInt = null;
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(function init(){
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  for(let i=0;i<6;i++) addRow();
+  startTimer();
+})();
+
+/* ============================================================
+   TIMER
+   ============================================================ */
+function startTimer(){
+  renderTimer();
+  timerInt = setInterval(()=>{
+    timerSec = Math.max(0, timerSec-1);
+    renderTimer();
+    if(timerSec===0){
+      clearInterval(timerInt);
+      document.getElementById('timesup').classList.add('show');
+      showToast('⏰ หมดเวลา! กดคำนวณค่าไฟ');
+    }
+  }, 1000);
+}
+function renderTimer(){
+  const m = Math.floor(timerSec/60), s = timerSec%60;
+  const el = document.getElementById('timer');
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.classList.toggle('warn', timerSec<120);
+  document.getElementById('timer-fill').style.width = (timerSec/TOTAL_S*100)+'%';
+}
+
+/* ============================================================
+   ADD ROW
+   ============================================================ */
+function addRow(){
+  rowCount++;
+  const id = rowCount;
+  const tr = document.createElement('tr');
+  tr.id = `row-${id}`;
+  tr.innerHTML = `
+    <td>${id}</td>
+    <td><select class="sel" onchange="onSel(this,${id})">
+      <option value="">— เลือกอุปกรณ์ —</option>${optHTML}</select></td>
+    <td><input type="number" class="ni watt" id="w-${id}"
+      min="1" max="9999" inputmode="numeric" placeholder="W"
+      oninput="calcRow(${id})"></td>
+    <td><input type="number" class="ni" id="q-${id}"
+      min="1" max="99" value="1" inputmode="numeric"
+      oninput="calcRow(${id})"></td>
+    <td><input type="number" class="ni" id="h-${id}"
+      min="0.25" max="24" step="0.25" inputmode="decimal" placeholder="ชม."
+      oninput="calcRow(${id})"></td>
+    <td><span class="cv"      id="rkwh-${id}">–</span></td>
+    <td><span class="cv cost" id="rcost-${id}">–</span></td>
+    <td><span class="cv co2"  id="rco2-${id}">–</span></td>
+    <td><button class="del-btn" onclick="delRow(${id})">✕</button></td>
+  `;
+  document.getElementById('ws-body').appendChild(tr);
+}
+
+/* ============================================================
+   SELECT
+   ============================================================ */
+function onSel(sel, id){
+  const opt = sel.options[sel.selectedIndex];
+  const w = parseInt(opt.dataset.w)||0;
+  const h = parseFloat(opt.dataset.h)||0;
+  const wi = document.getElementById(`w-${id}`);
+  const hi = document.getElementById(`h-${id}`);
+  if(wi && w>0) wi.value = w;
+  if(hi && h>0 && !hi.value) hi.value = h;
+  calcRow(id);
+}
+
+/* ============================================================
+   CALC ROW
+   ============================================================ */
+function calcRow(id){
+  const w   = parseFloat(document.getElementById(`w-${id}`)?.value)||0;
+  const qty = parseFloat(document.getElementById(`q-${id}`)?.value)||1;
+  const h   = parseFloat(document.getElementById(`h-${id}`)?.value)||0;
+  const kwh = w*qty*h/1000*30;
+  const c   = kwh*RATE;
+  const e   = kwh*EF;
+  const set = (eid,v)=>{ const el=document.getElementById(eid); if(el) el.textContent=v; };
+  if(w>0 && h>0){
+    set(`rkwh-${id}`,  kwh.toFixed(2));
+    set(`rcost-${id}`, c.toFixed(2));
+    set(`rco2-${id}`,  e.toFixed(3));
+    document.getElementById(`row-${id}`)?.classList.add('has-data');
+  } else {
+    set(`rkwh-${id}`,'–'); set(`rcost-${id}`,'–'); set(`rco2-${id}`,'–');
+    document.getElementById(`row-${id}`)?.classList.remove('has-data');
+  }
+  updateFooter();
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+function updateFooter(){
+  let tk=0,tc=0,te=0;
+  for(let i=1;i<=rowCount;i++){
+    const w   = parseFloat(document.getElementById(`w-${i}`)?.value)||0;
+    const qty = parseFloat(document.getElementById(`q-${i}`)?.value)||1;
+    const h   = parseFloat(document.getElementById(`h-${i}`)?.value)||0;
+    const km  = w*qty*h/1000*30;
+    tk+=km; tc+=km*RATE; te+=km*EF;
+  }
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  if(tk>0){
+    set('foot-kwh',  tk.toFixed(2)+' หน่วย');
+    set('foot-cost', tc.toFixed(2)+' บาท');
+    set('foot-co2',  te.toFixed(2)+' kg');
+  } else {
+    set('foot-kwh','–'); set('foot-cost','–'); set('foot-co2','–');
+  }
+}
+
+/* ============================================================
+   DELETE ROW
+   ============================================================ */
+function delRow(id){
+  document.getElementById(`row-${id}`)?.remove();
+  updateFooter();
+}
+
+/* ============================================================
+   CALCULATE → SUMMARY
+   ============================================================ */
+function calculate(){
+  const rows = [];
+  for(let i=1;i<=rowCount;i++){
+    const tr  = document.getElementById(`row-${i}`);
+    if(!tr) continue;
+    const sel = tr.querySelector('select');
+    const w   = parseFloat(document.getElementById(`w-${i}`)?.value)||0;
+    const qty = parseFloat(document.getElementById(`q-${i}`)?.value)||1;
+    const h   = parseFloat(document.getElementById(`h-${i}`)?.value)||0;
+    if(w<=0||h<=0) continue;
+    const raw  = sel?.options[sel.selectedIndex]?.text || `อุปกรณ์ ${i}`;
+    const name = raw.replace(/^[\S]+\s/, '');
+    const kwh  = w*qty*h/1000*30;
+    rows.push({ name, w, qty, h, kwh, cost:kwh*RATE, co2:kwh*EF });
+  }
+  if(rows.length===0){ showToast('⚠️ กรุณากรอกข้อมูลอย่างน้อย 1 รายการ'); return; }
+
+  const totK = rows.reduce((s,r)=>s+r.kwh, 0);
+  const totC = rows.reduce((s,r)=>s+r.cost,0);
+  const totE = rows.reduce((s,r)=>s+r.co2, 0);
+  const totN = rows.reduce((s,r)=>s+r.qty, 0);
+  const top  = rows.reduce((a,b)=>a.cost>b.cost?a:b, rows[0]);
+
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('s-kwh',  totK.toFixed(2));
+  set('s-cost', totC.toFixed(2));
+  set('s-yr',   (totC*12).toFixed(0));
+  set('s-co2',  totE.toFixed(2));
+  set('s-cnt',  totN);
+  set('s-top',  top.name);
+
+  const bkEl = document.getElementById('bk-list');
+  bkEl.innerHTML = '';
+  [...rows].sort((a,b)=>b.cost-a.cost).forEach((r,i)=>{
+    const pct = (r.cost/top.cost*100).toFixed(0);
+    const li  = document.createElement('li');
+    li.className = 'bk-item';
+    li.innerHTML = `
+      <span class="bk-rank">${i+1}.</span>
+      <div class="bk-info">
+        <div class="bk-name">${r.name}</div>
+        <div class="bk-meta">${r.qty} เครื่อง × ${r.h} ชม./วัน</div>
+      </div>
+      <div class="bk-bar"><div class="bk-fill" style="width:${pct}%"></div></div>
+      <span class="bk-cost">${r.cost.toFixed(0)} บ.</span>
+    `;
+    bkEl.appendChild(li);
+  });
+
+  let adv = `💡 <strong>คำแนะนำ:</strong> บ้านของคุณใช้ไฟ <strong>${totK.toFixed(1)} หน่วย/เดือน</strong> `;
+  adv    += `คิดเป็นค่าไฟ <strong>${totC.toFixed(0)} บาท/เดือน</strong> `;
+  if(totC>3000) adv += `ซึ่ง<span style="color:#C62828"><strong>ค่อนข้างสูง</strong></span> ควรลดการใช้ <strong>${top.name}</strong> เป็นอันดับแรก `;
+  else if(totC>1000) adv += `อยู่ใน<span style="color:#F57C00"><strong>ระดับปานกลาง</strong></span> ยังลดได้อีก `;
+  else adv += `อยู่ใน<span style="color:#2E7D32"><strong>ระดับประหยัด</strong></span> 👍 `;
+  adv    += `<br>หากลด <strong>${top.name}</strong> ลง 1 ชม./วัน ประหยัดได้ ~<strong>${(top.w*top.qty*30/1000*RATE).toFixed(0)} บาท/เดือน</strong>`;
+  adv    += `<br>🌿 Carbon ที่ปล่อย = <strong>${totE.toFixed(2)} kgCO₂/เดือน</strong> ≈ ปลูกต้นไม้ <strong>${Math.ceil(totE/21)} ต้น</strong> เพื่อดูดซับ`;
+  document.getElementById('advice').innerHTML = adv;
+
+  const sumEl = document.getElementById('summary');
+  sumEl.classList.add('show');
+  setTimeout(()=>sumEl.scrollIntoView({behavior:'smooth',block:'start'}), 100);
+  showToast('🧮 คำนวณเสร็จแล้ว!');
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+function resetAll(){
+  if(!confirm('ต้องการล้างข้อมูลและเริ่มใหม่?')) return;
+  document.getElementById('ws-body').innerHTML = '';
+  rowCount = 0;
+  document.getElementById('summary').classList.remove('show');
+  document.getElementById('timesup').classList.remove('show');
+  updateFooter();
+  clearInterval(timerInt);
+  timerSec = TOTAL_S;
+  startTimer();
+  for(let i=0;i<6;i++) addRow();
+  showToast('🔄 เริ่มใหม่แล้ว');
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
